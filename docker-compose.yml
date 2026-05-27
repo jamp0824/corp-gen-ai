@@ -1,0 +1,86 @@
+version: "3.9"
+
+# ──────────────────────────────────────────────────────
+# IBK BOX — 원클릭 로컬 실행
+#
+# 사용법:
+#   cp .env.example .env      # API 키 등 설정
+#   docker compose up --build
+#
+# 접속:
+#   프론트엔드: http://localhost:3000
+#   백엔드 API: http://localhost:8000
+#   API 문서:   http://localhost:8000/docs
+#
+# 데이터 영속성:
+#   ./data/ 디렉토리에 SQLite DB 파일 저장
+#   (PostgreSQL로 교체 시 하단 postgres 서비스 주석 해제)
+# ──────────────────────────────────────────────────────
+
+services:
+
+  # ── 백엔드 (FastAPI) ────────────────────────────────
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: ibkbox-backend:local
+    container_name: ibkbox-backend
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    environment:
+      # SQLite 데이터 파일을 볼륨 안에 저장
+      DATABASE_URL: sqlite+aiosqlite:///./data/ibkbox.db
+    volumes:
+      - ./data:/app/data            # DB 영속성
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+  # ── 프론트엔드 (Next.js) ────────────────────────────
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        # Docker 내부 통신: backend 서비스명으로 직접 연결
+        NEXT_PUBLIC_API_BASE_URL: http://backend:8000
+    image: ibkbox-frontend:local
+    container_name: ibkbox-frontend
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      NODE_ENV: production
+    depends_on:
+      backend:
+        condition: service_healthy
+
+# ── (선택) PostgreSQL ────────────────────────────────
+# SQLite 대신 PostgreSQL을 사용하려면 아래 주석 해제 후
+# backend의 DATABASE_URL을 변경하세요.
+#
+#  postgres:
+#    image: postgres:16-alpine
+#    container_name: ibkbox-postgres
+#    restart: unless-stopped
+#    environment:
+#      POSTGRES_DB:       ibkbox
+#      POSTGRES_USER:     ibkbox
+#      POSTGRES_PASSWORD: changeme
+#    volumes:
+#      - postgres_data:/var/lib/postgresql/data
+#    healthcheck:
+#      test: ["CMD-SHELL", "pg_isready -U ibkbox"]
+#      interval: 10s
+#      timeout: 5s
+#      retries: 5
+
+volumes:
+  # postgres_data:    # PostgreSQL 사용 시 주석 해제

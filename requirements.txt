@@ -10,15 +10,15 @@ pydantic-settings>=2.3.0
 anthropic>=0.30.0
 
 # ── 크롤링 ───────────────────────────────────────
-httpx>=0.27.0           # 비동기 HTTP 클라이언트
-trafilatura>=1.9.0      # HTML 본문 추출
+httpx>=0.27.0
+trafilatura>=1.9.0
 
-# ── DB (향후 확장) ────────────────────────────────
+# ── DB ───────────────────────────────────────────
 sqlalchemy[asyncio]>=2.0.0
-aiosqlite>=0.20.0
+aiosqlite>=0.20.0             # SQLite async 드라이버
+asyncpg>=0.29.0               # PostgreSQL async 드라이버 (선택)
 
 # ── 개발/테스트 ───────────────────────────────────
 pytest>=8.2.0
 pytest-asyncio>=0.23.0
-httpx                   # TestClient용 (위에서 이미 포함)
-respx>=0.21.0           # httpx mock
+respx>=0.21.0
